@@ -1,0 +1,49 @@
+{
+  "status": true,
+  "message": "Authorization URL created",
+  "data": {
+    "authorization_url": "https://checkout.paystack.com/jah4hvenaj7bj83",
+    "access_code": "jah4hvenaj7bj83",
+    "reference": "oug5lggle5"
+  }
+}
+
+{
+  "Vtu": {
+    "code": "016",
+    "content": {
+      "transactions": {
+        "status": "failed",
+        "product_name": "GLO Data",
+        "unique_element": "09130572732",
+        "unit_price": "1000",
+        "quantity": 1,
+        "service_verification": null,
+        "channel": "api",
+        "commission": 40,
+        "total_amount": 960,
+        "discount": null,
+        "type": "Data Services",
+        "email": "michaelanazodo2024@gmail.com",
+        "phone": "09033149582",
+        "name": null,
+        "convinience_fee": 0,
+        "amount": "1000",
+        "platform": "api",
+        "method": "api",
+        "transactionId": "17849733046452703764696665",
+        "commission_details": {
+          "amount": 40,
+          "rate": "4.00",
+          "rate_type": "percent",
+          "computation_type": "default"
+        }
+      }
+    },
+    "response_description": "TRANSACTION FAILED",
+    "requestId": "2026072515d76eae",
+    "amount": 1000,
+    "transaction_date": "2026-07-25T09:55:04.000000Z",
+    "purchased_code": ""
+  }
+}
