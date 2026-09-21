@@ -5116,3 +5116,29 @@
 {"environment":"production","level":"info","message":"Notification listeners registered for 15 event type(s)","service":"vtunova-api","timestamp":"2026-09-22 00:06:31"}
 {"environment":"production","level":"info","message":"VtuNova Platform running on port 3000 [production]","service":"vtunova-api","timestamp":"2026-09-22 00:06:31"}
 {"environment":"production","level":"info","message":"API Docs: http://localhost:3000/api","service":"vtunova-api","timestamp":"2026-09-22 00:06:31"}
+{"code":"ECONNRESET","environment":"production","errno":-4077,"level":"error","message":"[notif-worker] Worker error: read ECONNRESET","service":"vtunova-api","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2026-09-22 00:15:44"}
+{"code":"ECONNRESET","environment":"production","errno":-4077,"level":"error","message":"Redis Client Error read ECONNRESET","service":"vtunova-api","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2026-09-22 00:15:49"}
+{"environment":"production","level":"info","message":"Redis client connected","service":"vtunova-api","timestamp":"2026-09-22 00:15:49"}
+{"code":"ECONNRESET","environment":"production","errno":-4077,"level":"error","message":"Redis Client Error read ECONNRESET","service":"vtunova-api","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2026-09-22 00:24:33"}
+{"environment":"production","level":"info","message":"Redis client connected","service":"vtunova-api","timestamp":"2026-09-22 00:24:34"}
+{"code":"ECONNRESET","environment":"production","errno":-4077,"level":"error","message":"[notif-worker] Worker error: read ECONNRESET","service":"vtunova-api","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2026-09-22 00:24:48"}
+{"environment":"production","level":"info","message":"Cache miss for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:30:37"}
+{"environment":"production","level":"info","message":"Cache set for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:30:37"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 00:31:34"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:31:35"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:31:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 00:31:37"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:31:37"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:32:34"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 00:32:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:32:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:33:06"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 00:33:07"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:33:08"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:33:21"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 00:33:22"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:33:22"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:33:34"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 00:33:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:33:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 00:34:37"}

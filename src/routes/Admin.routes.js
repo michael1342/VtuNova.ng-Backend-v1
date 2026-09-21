@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const adminController = require('../controllers/admin.controller');
+const adminController = require('../controllers/Admin.controller');
 const {Protect, AdminOnly} = require('../middleware/Auth');
 
 router.get('/transactions', Protect, AdminOnly, adminController.getTransactions);
