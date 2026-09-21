@@ -24,18 +24,18 @@ const startApp = async () => {
         //   NGROK SETUP
         const ngrok = require("@ngrok/ngrok");
 
-        async function forwardToApp() {
-            const forwarder = await ngrok.forward({
-                addr: "localhost:3000",
-                authtoken_from_env: true,
-                domain: "raven-chapped-cartload.ngrok-free.dev",
-            });
-            console.log(`Available at: ${forwarder.url()}`);
-        }
+        // async function forwardToApp() {
+        //     const forwarder = await ngrok.forward({
+        //         addr: "localhost:3000",
+        //         authtoken_from_env: true,
+        //         domain: "raven-chapped-cartload.ngrok-free.dev",
+        //     });
+        //     console.log(`Available at: ${forwarder.url()}`);
+        // }
 
         forwardToApp();
 
-        const server = app.listen(PORT, () => {
+        const server = app.listen(PORT, "0.0.0.0", () => {
             logger.info(`VtuNova Platform running on port ${PORT} [${process.env.NODE_ENV}]`);
             logger.info(`API Docs: http://localhost:${PORT}/api`);
         })
