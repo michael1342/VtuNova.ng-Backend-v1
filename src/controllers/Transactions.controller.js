@@ -1,54 +1,43 @@
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction.model');
-const NotificationService = require('../services/notification.service');
 const receiptService = require('../services/receipt.service');
-const User = require('../models/User.model');
-const RedisCache = require('../cache/redis_cache')
-const eventbus = require('../events/eventsBus')
 const TransactionService = require('../services/transaction.service')
 const logger = require('../utils/logger')
 
 exports.createTransaction = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id)
-        const paystackData = req.paystackTransaction
-        const transactionReference = paystackData.data.reference
-
-        const transaction = await Transaction.findOne({ transactionReference })
-
-        if (!transaction) return res.status(400).json({ message: "transaction not found" })
-
-        if (transaction.status === 'success') return res.status(400).json({ message: "Transaction has already been processed" })
-
-    
-        const response = await TransactionService.updateTransaction(transaction._id, {
-            type: paystackData.data.type,
-            status: paystackData.data.status,
-            currency: paystackData.data.currency,
-            paidAt: paystackData.data.paidAt,
-            createdAt: paystackData.data.createdAt,
-            paymentMethod: paystackData.data.channel,
-            fee: paystackData.data.fees / 100
-        });
-
-        if (!response) return res.status(400).json({ message: "Failed to update transaction" })
-
-
-
-
-        if (paystackData.data.status === "success") {
-            user.wallet.balance += paystackData.data.amount / 100;
-            await user.save();
-            await transaction.save()
-        }
-
-        //create an event
-        eventbus.emitSafe('transaction.created', { transaction, user });
-
+        await TransactionService.createTransaction(req.body, req)
+      
         return res.status(200).json(response)
-
     } catch (error) {
-        return res.status(500).json({ error: 'Failed to create transaction', message: error.message });
+        next(error)
+    }
+};
+
+exports.getTransactions = async (req, res, next) => {
+    try {
+      const transactions = await TransactionService.retrieveTransactions(req.user.id)
+        return res.status(200).json(transactions);
+    } catch (error) {
+        next(error)
+    }
+};
+
+exports.getOneTransaction = async (req, res, next) => {
+    try {
+        const transaction = await TransactionService.retrieveOneTransaction(req.params.id)
+        return res.status(200).json(transaction);
+    } catch (error) {
+        next(error)
+    }
+};
+
+exports.deleteTransaction = async (req, res, next) => {
+    try {
+        const transaction = await TransactionService.deleteTransaction(req.params.id)
+        return res.status(200).json(transaction);
+    } catch (error) {
+        next(error)
     }
 };
 
@@ -96,6 +85,6 @@ exports.downloadReceipt = async (req, res, next) => {
         return { transaction, receiptFilename }
 
     } catch (error) {
-        return res.status(500).json({ error: 'Failed to generate receipt', message: error.message });
+       next(err)
     }
 };

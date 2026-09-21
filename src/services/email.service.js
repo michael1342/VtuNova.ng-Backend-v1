@@ -17,7 +17,6 @@ class EmailService {
 
         if (!SMTP_HOST || !SMTP_USER) {
             logger.warn('SMTP not configured — emails will be logged to console, not sent.');
-            console.log('SMTP not configured — emails will be logged to console, not sent.');
             this.isConfigured = false;
             return;
         }

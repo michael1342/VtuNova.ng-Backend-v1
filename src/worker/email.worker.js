@@ -9,43 +9,53 @@ console.log("emailWorker.js loaded");
 const emailWorker = new Worker(
   "emailQueue",
   async (job) => {
-    // console.log(`Processing job: ${job.name}`);
-    logger.info(`Processing job: ${job.name}`);
+    logger.info(`[email-worker] Processing job: ${job.name} (id=${job.id})`);
 
-    if (job.name === "loginAlert") {
-      await emailService.send(
-        "loginAlert",
-        job.data.email,
-        {
-          fullName: job.data.fullName || "there",
-          time: new Date().toLocaleString("en-GB", {
-            dateStyle: "medium",
-            timeStyle: "short",
-            timeZone: "Africa/Lagos",
-          }),
-          ipAddress: job.data.ip,
-          device: job.data.device,
-        },
-        {
-          triggeredBy: "user.login",
-          relatedUser: job.data.userId,
-        }
-      );
+    switch (job.name) {
+      case "loginAlert": {
+        await emailService.send(
+          "loginAlert",
+          job.data.email,
+          {
+            fullName: job.data.fullName || "there",
+            time: new Date().toLocaleString("en-GB", {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "Africa/Lagos",
+            }),
+            ipAddress: job.data.ip,
+            device: job.data.device,
+          },
+          {
+            triggeredBy: "user.login",
+            relatedUser: job.data.userId,
+          }
+        );
+        break;
+      }
+
+      default: {
+        logger.warn(`[email-worker] Unhandled job name: ${job.name}`);
+        break;
+      }
     }
   },
   {
     connection: {
       host: process.env.REDIS_HOST,
       port: Number(process.env.REDIS_PORT),
-      password: process.env.REDIS_PASSWORD || undefined,
+      password: process.env.REDIS_PASSWORD ,
     },
+    concurrency: 5,
   }
 );
 
 emailWorker.on("completed", (job) => {
-  console.log(`Job ${job.id} completed`);
+  logger.info(`[email-worker] Job ${job.id} completed`);
 });
 
 emailWorker.on("failed", (job, error) => {
-  console.error(`Job ${job?.id} failed:`, error.message);
+  logger.error(`[email-worker] Job ${job?.id} failed:`, error.message);
 });
+
+module.exports = emailWorker;

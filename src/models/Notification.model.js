@@ -1,3 +1,4 @@
+const { required } = require('joi');
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
@@ -9,23 +10,35 @@ const notificationSchema = new mongoose.Schema({
 
     transactionId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Transaction',
-        required: true
+        ref: 'Transaction'
     },
 
-    // category: {
-    //     type: String
-    // },
+    category: {
+        type: String
+    },
 
     message: {
         type: String
     },
 
     type: {
-        type: String
+        type: String,
+        required: true
     },
 
     title: {
+        type: String
+    },
+
+    amount: {
+        type: Number
+    },
+
+    service: {
+        type: String
+    },
+
+    product_name: {
         type: String
     },
 

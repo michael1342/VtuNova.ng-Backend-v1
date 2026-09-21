@@ -30,6 +30,54 @@ const TEMPLATE = {
        ACCOUNT & SECURITY
     ======================================================== */
 
+    welcome: (data) => ({
+        subject: `Welcome to ${BRAND.name}`,
+
+        html: layout(
+            heading(`Welcome to ${BRAND.name}`) +
+
+            paragraph(`Hello ${data.fullName || 'there'},`) +
+
+            paragraph(
+                `Your ${BRAND.name} account is ready. We are glad to have you ` +
+                'with us for faster, simpler everyday payments.'
+            ) +
+
+            detailBox([
+                ['Account status', 'Active'],
+                ['Platform', BRAND.name],
+            ]) +
+
+            button(
+                'Open VtuNova',
+                portal('/dashboard')
+            ) +
+
+            infoNote(
+                `Need help getting started? Contact us at ` +
+                `<a href="mailto:${BRAND.supportEmail}" ` +
+                `style="color:${BRAND.secondary};">` +
+                `${BRAND.supportEmail}</a>.`
+            ),
+
+            {
+                preheader:
+                    `Your ${BRAND.name} account is ready to use.`,
+            }
+        ),
+
+        text: `
+Welcome to ${BRAND.name}.
+
+Hello ${data.fullName || 'there'},
+
+Your account is ready. Open the platform here:
+${portal('/dashboard')}
+
+Need help? Contact ${BRAND.supportEmail}.
+        `.trim(),
+    }),
+
     loginAlert: (data) => ({
         subject: `New sign-in to your account`,
 
@@ -183,10 +231,10 @@ If you did not request this, you can ignore this email.
                 'to secure your account and complete your registration.'
             ) +
 
-            button(
-                'Verify Email Address',
-                data.verificationUrl
-            ) +
+            detailBox([
+                ['Verification code', data.otp],
+                ['Expires in', `${data.expiresInMinutes || 10} minutes`],
+            ]) +
 
             infoNote(
                 'If you did not create a VtuNova account, you can safely ignore this email.'
@@ -203,8 +251,8 @@ Hello ${data.fullName || 'there'},
 
 Welcome to ${BRAND.name}.
 
-Verify your email address:
-${data.verificationUrl}
+Your email verification code is: ${data.otp}
+It expires in ${data.expiresInMinutes || 10} minutes.
         `.trim(),
     }),
 

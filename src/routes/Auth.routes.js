@@ -4,6 +4,8 @@ const {Protect} = require('../middleware/Auth');
 const {AuthRate, refreshRate} = require('../middleware/rateLimit');
 
 router.post('/register', AuthRate, AuthController.register);
+router.post('/verify-otp', AuthRate, AuthController.verifyOtp);
+router.post('/resend-otp', AuthRate, AuthController.resendOtp);
 router.post('/login', AuthRate, AuthController.login);
 router.get('/profile', AuthRate, Protect, AuthController.getProfile);
 router.patch('/change-password', AuthRate, Protect, AuthController.changePassword);

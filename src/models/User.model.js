@@ -108,6 +108,15 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    loginIps: [{
+        type: String
+    }],
+    loginDevices: [{
+        type: String
+    }],
+    loginBrowsers: [{
+        type: String
+    }],
     emailVerified: {
         type: Boolean,
         default: false

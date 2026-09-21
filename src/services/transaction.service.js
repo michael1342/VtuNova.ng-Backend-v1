@@ -1,6 +1,7 @@
 const logger = require('../utils/logger')
 const Transaction = require('../models/Transaction.model')
 const RedisCache = require('../cache/redis_cache')
+const cacheKeys = require('../utils/cacheKeys')
 const User = require('../models/User.model')
 
 class TransactionService {
@@ -10,7 +11,7 @@ class TransactionService {
             if (!transactionData) throw new Error('Transaction data not found')
             if(!user) throw new Error('User not found')
             const recipient = (req.body && (req.body.phone || req.body.BillersCode || req.body.billersCode)) || 
-                              transactionData.content.transactions.unique_element || 
+                              transactionData?.content?.transactions?.unique_element || 
                               user.phone || 
                               user.email;
                               if(!recipient) return await Transaction.create({ ...transactionData })
@@ -19,7 +20,7 @@ class TransactionService {
 
 
              //invalidate cache
-             await RedisCache.invalidate(transactionData, user._id)
+             await RedisCache.invalidate(cacheKeys.userTransactions(user._id))
              logger.info(`Cache invalidated for user ${user._id}`);
 
         logger.info(`Transaction saved to DB`);
@@ -35,10 +36,12 @@ class TransactionService {
         if(!transactions) throw new Error('no transactions found')
 
             //Cache transaction data
-            const cache = await RedisCache.retrieve(transactions, userId)
+            const key = cacheKeys.userTransactions(userId)
+            const cache = await RedisCache.retrieve(key)
             if (!cache) {
-                await RedisCache.set(transactions, userId)
-                logger.info(`Cache set for user ${userId}: ${JSON.stringify(transactions)}`);
+                await RedisCache.set(transactions, key)
+                logger.info(`Cache set for user ${userId}`);
+                return transactions;
             }
         return cache
     }
@@ -48,10 +51,12 @@ class TransactionService {
         if(!transaction) throw new Error('transaction not found')
 
             //cache transaction data
-            const cache = await RedisCache.retrieve(transaction, transactionId)
+            const key = cacheKeys.transaction(transactionId)
+            const cache = await RedisCache.retrieve(key)
             if (!cache) {
-                await RedisCache.set(transaction, transactionId)
-                logger.info(`Cache set for transaction ${transactionId}: ${JSON.stringify(transaction)}`);
+                await RedisCache.set(transaction, key)
+                logger.info(`Cache set for transaction ${transactionId}`);
+                return transaction;
             }
         return cache
     }
@@ -62,16 +67,25 @@ class TransactionService {
         if(!transaction) throw new Error('transaction not found')
 
             //invalidate cache
-            await RedisCache.invalidate(transaction, transactionId)
+            await RedisCache.invalidate(cacheKeys.transaction(transactionId))
+            if (transaction?.user) {
+                await RedisCache.invalidate(cacheKeys.userTransactions(transaction.user))
+            }
             logger.info(`Cache invalidated for transaction ${transactionId}`);
     }
 
-    async updateTransaction(transactionId, updateData) {
+    async updateTransaction(transactionId, updateData, userId) {
         const transaction = await Transaction.findOneAndUpdate({ _id: transactionId }, { $set: updateData }, { new: true })
         if(!transaction) throw new Error('transaction not found')
 
+            if (userId) {
+                await RedisCache.invalidate(cacheKeys.userTransactions(userId))
+            } else if (transaction?.user) {
+                await RedisCache.invalidate(cacheKeys.userTransactions(transaction.user))
+            }
+
             //invalidate cache
-            await RedisCache.invalidate(transaction, transactionId)
+            await RedisCache.invalidate(cacheKeys.transaction(transactionId))
             logger.info(`Cache invalidated for transaction ${transactionId}`);
         return transaction
     }

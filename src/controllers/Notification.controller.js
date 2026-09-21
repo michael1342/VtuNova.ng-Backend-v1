@@ -4,7 +4,7 @@ const AppError = require('../utils/AppError')
 exports.getOneNotification = async (req, res, next) => {
     try {
         const notification = await NotificationService.retrieveNotification(
-            req.params.id
+            req.params.id, req
         );
         res.status(200).json({ notification });
     } catch (err) {
@@ -12,18 +12,18 @@ exports.getOneNotification = async (req, res, next) => {
     }
 };
 
-exports.getAllNotifications = async (req, res) => {
+exports.getAllNotifications = async (req, res, next) => {
     try {
         // const transactions = await Transaction.findById({ user: req.user.id });
         const response = await NotificationService.retrieveAllNotifications(
-            req.user._id
+            req.user._id, req
         );
         if (!response) {
-            return new AppError('No notifications found', 404);
+            return res.status(200).json({ notifications: [] });
         }
-        return res.status(200).json({ notifications: response.notifications, transactions: response.transactions });
+        return res.status(200).json({ notifications: response });
     } catch (err) {
-        return new AppError(err.message, 500);
+        next(err)
     }
 };
 
@@ -34,7 +34,7 @@ exports.setReadNotification = async (req, res) => {
         );
         return res.status(200).json({ notification });
     } catch (err) {
-        return new AppError(err.message, 500);
+       next(err)
     }
 }
 
@@ -46,7 +46,7 @@ exports.readOneNotification = async (req, res) => {
         );
         return res.status(200).json({ notification });
     } catch (err) {
-        return new AppError(err.message, 500);
+       next(err)
     }
 }
 
@@ -56,10 +56,9 @@ exports.unreadOneNotification = async (req, res) => {
             req.user.id,
             req.params.id
         );
-        console.log(notification)
         return res.status(200).json({ notification });
     } catch (err) {
-        return new AppError(err.message, 500);
+        next(err)
     }
 }
 
@@ -70,7 +69,7 @@ exports.deleteNotification = async (req, res) => {
         );
         return res.status(200).json(notification);
     } catch (err) {
-        return new AppError(err.message, 500);
+       next(err)
     }
 }
 
@@ -81,6 +80,6 @@ exports.clearAllNotifications = async (req, res) => {
         );
         return res.status(200).json(notification);
     } catch (err) {
-        return new AppError(err.message, 500);
+        next(err)
     }
 }

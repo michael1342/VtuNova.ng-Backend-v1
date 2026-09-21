@@ -1,11 +1,12 @@
 const {Queue} = require('bullmq');
 require('dotenv').config();
+console.log('notificationQueue.js loaded');
 
 const notificationQueue = new Queue('notificationQueue', {
-    redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT || 6379,
-        password: process.env.REDIS_PASSWORD || undefined,
+    connection: {
+        host: process.env.REDIS_HOST ,
+        port: Number(process.env.REDIS_PORT) ,
+        password: process.env.REDIS_PASSWORD,
     },
     defaultJobOptions: {
         removeOnComplete: true,
@@ -13,4 +14,8 @@ const notificationQueue = new Queue('notificationQueue', {
     },
 });
 
-module.exports = { notificationQueue };
+notificationQueue.on('completed', (job) => {
+    console.log(`Job ${job.id} completed!`);
+});
+
+module.exports =  notificationQueue 

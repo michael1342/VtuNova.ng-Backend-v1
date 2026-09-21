@@ -20,7 +20,7 @@ class AppEvent extends EventEmiter {
           );
         }
       } catch (err) {
-        logger.error(`Event listener for "${eventName}" threw: ${err.message}`);
+        logger.error(`Event listener for "${eventName}" threw: ${err.message}`)
       }
     }
   }

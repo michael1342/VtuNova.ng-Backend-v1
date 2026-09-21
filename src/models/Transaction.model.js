@@ -8,10 +8,6 @@ const TransactionSchema = new mongoose.Schema({
         ref: 'User',
         // required: true
     },
-    transactionReference: {
-        type: String,
-        // required: true
-    },
     transactionId: {
         type: String
     },
@@ -37,40 +33,19 @@ const TransactionSchema = new mongoose.Schema({
         // required: true
     },
 
-    currency: {
-        type: String,
-        // required: true,
-        default: 'NGN',
-        sparse: true
-    },
-
     status: {
         type: String,
         default: 'pending'
     },
 
     service: {
-        type: String,
-        default: 'Deposit'
+        type: String
     },
 
     type: {
         type: String,
         enum: Object.values(TRANSACTION_TYPES),
         // required: true
-    },
-
-    paymentMethod: {
-        type: String
-    },
-
-    fee: {
-        type: Number
-    },
-
-    transactionDate: {
-        type: Date,
-        default: Date.now
     },
 
     paidAt: {
@@ -83,5 +58,10 @@ const TransactionSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+
+TransactionSchema.index({email: 1})
+TransactionSchema.index({user: 1})
+TransactionSchema.index({createdAt: -1})
 
 module.exports = mongoose.model('Transaction', TransactionSchema);

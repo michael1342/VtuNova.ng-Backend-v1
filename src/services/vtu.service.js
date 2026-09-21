@@ -6,8 +6,10 @@ const TransactionService = require('../services/transaction.service')
 const User = require('../models/User.model');
 const AppError = require('../utils/AppError');
 const eventBus = require('../events/eventsBus');
+const EVENTS = require('../events/events');
 const axios = require('axios');
 const RedisCache = require('../cache/redis_cache');
+const cacheKeys = require('../utils/cacheKeys');
 const logger = require('../utils/logger');
 
 class VtuService {
@@ -22,18 +24,17 @@ class VtuService {
 
     //--------------SAVE TRANSACTION--------------//
 
-    async saveTransactionToDB(transactionData, req) {
+    async saveTransactionToDB(transactionData, amount, req) {
         const response = await TransactionService.createTransaction({
             type: transactionData.type,
             status: transactionData.status,
-            currency: transactionData.currency,
             paidAt: transactionData.paidAt,
             createdAt: transactionData.createdAt,
-            paymentMethod: transactionData.channel,
-            fee: Number(transactionData.fees) / 100 || 0,
             transactionReference: transactionData.reference,
-            user: req.user._id
+            user: req.user._id,
+            amount: transactionData.amount
         }, req)
+        return response
     }
 
     //--------------VTPASS BUY AIRTIME--------------//
@@ -42,9 +43,6 @@ class VtuService {
         try {
             const user = await User.findById(req.user._id);
             const userAmount = user.wallet.balance
-
-            
-            // console.log(transactions)
 
 
             const { phone, amount, serviceID } = data;
@@ -74,14 +72,13 @@ class VtuService {
                 // if(!responseData.ok) throw new AppError('Transaction failed', 400)
 
                 //Save Transaction to DB
-            const transaction = await this.saveTransactionToDB(responseData, req)
+            const transaction = await this.saveTransactionToDB(responseData, amount, req)
             const transactions = await Transaction.findOne(user._id)
-             await notificationService.createNotification(transactions._id, user._id)
+            //  await notificationService.createNotification(transactions._id, user._id)
 
 
             //Emit Event to create notification
-            eventBus.emitSafe('airtime.purchase', { transaction, user });
-            // console.log(user)
+            eventBus.emitSafe(EVENTS.AIRTIME_PURCHASE, { transaction, user });
 
 
             //Deduct amount from user wallet
@@ -123,7 +120,6 @@ class VtuService {
 
             const transaction = await this.saveTransactionToDB(responseData, req)
              await notificationService.createNotification(transaction._id, user._id)
-            console.log(transaction)
 
             if(user.wallet.balance < amount) throw new AppError('Insufficient balance', 400)
 
@@ -151,10 +147,11 @@ class VtuService {
             const responseData = await response.json();
 
             //Cache data 
-            const cache = await RedisCache.retrieve(responseData, serviceID)
+            const key = cacheKeys.vtuDataPlans(serviceID)
+            const cache = await RedisCache.retrieve(key)
             if (!cache) {
-                await RedisCache.set(responseData, serviceID)
-                logger.info(`Cache set for serviceID ${serviceID}: ${JSON.stringify(responseData)}`);
+                await RedisCache.set(responseData, key)
+                logger.info(`Cache set for serviceID ${serviceID}`);
                 return responseData
             }
 
@@ -181,7 +178,6 @@ class VtuService {
                 body: JSON.stringify({ billersCode, serviceID, type })
             });
             const responseData = await response.json();
-            // console.log(responseData)
             
             if(responseData.content?.WrongBillersCode) return res.status(400).json({message: responseData.content.error})
                 if(responseData.content?.error) return res.status(400).json({message: responseData.content.error})
@@ -205,13 +201,11 @@ class VtuService {
                 body: JSON.stringify({ request_id, variation_code, billersCode, amount, phone, serviceID })
             });
             const responseData = await response.json();
-            // console.log(responseData)
 
               if(responseData.content?.WrongBillersCode) return res.status(400).json({message: responseData.content.error})
                 if(responseData.content?.error) return res.status(400).json({message: responseData.content.error})
 
              const transaction = await this.saveTransactionToDB(responseData, req)
-            //  console.log(transaction)
             const notification = await notificationService.createNotification(transaction._id, user._id)
              if(user.wallet.balance < amount) throw new AppError('Insufficient balance', 400)
             // if(user.wallet.balance < amount) return res.status(400).json({message: 'Insufficient balance'})

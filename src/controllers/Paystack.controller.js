@@ -1,71 +1,60 @@
 
 const Transaction = require('../models/Transaction.model');
 const User = require('../models/User.model');
-const TransactionService = require('../services/transaction.service');
+const logger = require('../utils/logger');
+const PaystackService = require('../services/paystack.service');
 
 exports.initiatePayment = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
-        const existPay = await Transaction.findOne({ user: req.user._id, status: 'pending' });
-        if (existPay) return res.status(400).json({ message: "You have a pending transaction" });
+
+        //wallet status check
+        if(user.walletStatus === 'inactive') {
+            logger.error('Wallet is inactive');
+            return res.status(400).json({ message: "Wallet is inactive" });
+        }
+
+        const response = await PaystackService.initializePayment(user, req);
 
 
-        const response = await paystack.initializeTransaction(user, req);
-
-        if (user.wallet.walletStatus === 'inactive') return res.status(400).json({ message: "Wallet is frozen" });
-
-        const reference = await response.data.reference;
-        const amount = req.body.amount
-        await TransactionService.createTransaction({
-            user: req.user._id,
-            transactionReference: reference,
-            amount: amount,
-            status: 'pending',
-            email: user.email
-        }, req);
         res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ message: "Internal server error", error: error.message, detail: "Error initiating payment" });
     }
 }
 
-
-exports.verifyTransactions = async (req, res, next) => {
-    //     #!/bin/sh
-    // url="https://api.paystack.co/bank/resolve?account_number=0022728151&bank_code=063"
-    // authorization="Authorization: Bearer YOUR_SECRET_KEY"
-
-    // curl "$url" -H "$authorization" -X GET
-    // https://api.paystack.co/bank/resolve?account_number=0022728151&bank_code=063
-
+exports.verifyPayment = async (req, res) => {
     try {
-        const { reference } = req.params
-        const url = `https://api.paystack.co/transaction/verify/${reference}`;
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            },
-        });
-        const responseData = await response.json();
+        const reference = req.params.reference;
 
-        if (!response.ok) {
-            // throw new Error(responseData.message || "Failed to verify transaction");
-            return res.status(400).json({ message: "Failed to verify transaction", error: responseData.message });
-        }
+        if(!reference) return res.status(400).json({ message: "Reference is required" });
 
-        const transaction = await Transaction.findOne({ transactionReference: reference });
-        if (!transaction) {
-            return res.status(400).json({ message: "Transaction not found" });
-        }
-        transaction.status = "success";
-        await transaction.save();
+        const response = await PaystackService.verify(reference);
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message, detail: "Error verifying payment" });
+    }
+}
 
+exports.handleWebhook = async (req, res) => {
+     try {
+        console.log('hit')
+      const payload = req.body;
+      const signature = req.headers['x-paystack-signature'];
+      console.log('signature:', signature)
 
-        return responseData;
-    } catch (err) {
-        // next(err)
-        return res.status(400).json({ message: "Failed to verify transaction", error: err.message });
+      if (!signature) {
+        return res.status(400).json({ status: 'error', message: 'Missing signature' });
+      }
+
+      // req.rawBody is captured by express.json({ verify }) in app.js.
+      const result = await PaystackService.handleWebhook(payload, signature, req.rawBody);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      // Return 200 to prevent Paystack from retrying
+      next(error)
+      logger.error('Webhook error:', error);
+      return res.status(200).json({ status: 'error', message: error.message });
     }
 }

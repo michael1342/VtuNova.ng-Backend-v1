@@ -3,10 +3,13 @@ const Transaction = require('../models/Transaction.model');
 const User = require('../models/User.model');
 const Beneficiary = require('../models/Beneficiary.model');
 const ChartService = require('../services/charts.service')
+const RedisCache = require('../cache/redis_cache')
+const cacheKeys = require('../utils/cacheKeys')
+const logger = require('../utils/logger')
 
 exports.getOneNotification = async (req, res, next) => {
   try {
-    const notification = await notificationService.retriveNotification(
+    const notification = await notificationService.retrieveNotification(
       req.params.id
     );
     res.status(200).json(notification);
@@ -39,6 +42,10 @@ exports.uploadProfilePic = async (req, res, next) => {
         message: "User not found",
       });
     }
+
+    //invalidate cache
+    await RedisCache.invalidate(cacheKeys.userProfile(user._id))
+    logger.info('user cache invalidated successfully')
 
     return res.status(200).json({
       success: true,

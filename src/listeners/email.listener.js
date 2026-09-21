@@ -2,7 +2,7 @@ const eventBus = require('../events/eventsBus.js');
 const EVENTS = require('../events/events');
 const emailService = require('../services/email.service');
 const logger = require('../utils/logger');
-const {emailQueue} = require('../queue/email.queue.js');
+const {emailQueue} = require('../queue/email.queue');
 // const {EVENTS} = require('../events/events');
 
 
@@ -47,19 +47,40 @@ function registerEmailListeners() {
     ======================================================== */
 
     eventBus.on(
-        'user.login',
-        safe('loginAlert', async ({ user, ip, device }) => {
+        EVENTS.USER_CREATED,
+        safe('welcomeEmail', async ({ user }) => {
             if (!user?.email) return;
+
+            await emailService.send(
+                'welcome',
+                user.email,
+                {
+                    fullName: getFullName(user),
+                },
+                {
+                    triggeredBy: EVENTS.USER_CREATED,
+                    dedupeKey: `welcome:${user._id}`,
+                    relatedUser: user._id,
+                }
+            );
+        })
+    );
+
+    eventBus.on(
+        EVENTS.NEW_LOGIN,
+        safe('loginAlert', async ({ user, ip, device, browser }) => {
+            if (!user?.email) return;
+            
             await emailQueue.add('loginAlert', {
                 email: user.email,
                 subject: 'New Login Alert',
                 fullName: getFullName(user),
                 time: now(),
                 ip,
-                device,
-                message: `Hello ${getFullName(user)}, we noticed a new login to your account from IP address ${ip} using ${device}. If this was you, no action is needed. If not, please secure your account immediately.`,
+                device: `${device} (${browser})`,
+                message: `Hello ${getFullName(user)}, we noticed a new login to your account from IP address ${ip} using ${device} (${browser}). If this was you, no action is needed. If not, please secure your account immediately.`,
             });
-            console.log('hello2')
+            
         })
     );
 
@@ -110,21 +131,20 @@ function registerEmailListeners() {
 
     eventBus.on(
         EVENTS.USER_EMAIL_VERIFICATION_REQUESTED,
-        safe('emailVerification', async ({ user, verificationUrl }) => {
-            if (!user?.email) return;
+        safe('emailVerification', async ({ email, name, otp, expiresInMinutes }) => {
+            if (!email || !otp) return;
 
             await emailService.send(
                 'emailVerification',
-                user.email,
+                email,
                 {
-                    fullName: getFullName(user),
-                    verificationUrl,
+                    fullName: name || 'there',
+                    otp,
+                    expiresInMinutes,
                 },
                 {
                     triggeredBy:
                         EVENTS.USER_EMAIL_VERIFICATION_REQUESTED,
-                    dedupeKey: `emailVerification:${user._id}`,
-                    relatedUser: user._id,
                 }
             );
         })
