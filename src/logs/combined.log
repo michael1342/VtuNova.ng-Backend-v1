@@ -5202,3 +5202,4 @@
 {"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 00:48:09"}
 {"environment":"production","level":"info","message":"Email transport ready via smtp.gmail.com","service":"vtunova-api","timestamp":"2026-09-22 00:48:24"}
 {"environment":"production","level":"info","message":"Redis client connected","service":"vtunova-api","timestamp":"2026-09-22 00:48:28"}
+{"environment":"production","level":"info","message":"SMTP connection veried","service":"vtunova-api","timestamp":"2026-09-22 00:48:38"}

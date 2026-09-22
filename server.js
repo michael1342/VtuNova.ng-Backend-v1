@@ -33,7 +33,7 @@ const startApp = async () => {
         //     console.log(`Available at: ${forwarder.url()}`);
         // }
 
-        forwardToApp();
+        // forwardToApp();
 
         const server = app.listen(PORT, "0.0.0.0", () => {
             logger.info(`VtuNova Platform running on port ${PORT} [${process.env.NODE_ENV}]`);
