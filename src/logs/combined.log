@@ -5203,3 +5203,27 @@
 {"environment":"production","level":"info","message":"Email transport ready via smtp.gmail.com","service":"vtunova-api","timestamp":"2026-09-22 00:48:24"}
 {"environment":"production","level":"info","message":"Redis client connected","service":"vtunova-api","timestamp":"2026-09-22 00:48:28"}
 {"environment":"production","level":"info","message":"SMTP connection veried","service":"vtunova-api","timestamp":"2026-09-22 00:48:38"}
+{"environment":"production","level":"info","message":"Email transport ready via smtp.gmail.com","service":"vtunova-api","timestamp":"2026-09-22 01:01:31"}
+{"environment":"production","level":"info","message":"Redis client connected","service":"vtunova-api","timestamp":"2026-09-22 01:01:36"}
+{"environment":"production","level":"info","message":"SMTP connection veried","service":"vtunova-api","timestamp":"2026-09-22 01:01:47"}
+{"environment":"production","level":"info","message":"Email listeners registered for 11 event type(s)","service":"vtunova-api","timestamp":"2026-09-22 01:01:47"}
+{"environment":"production","level":"info","message":"Notification listeners registered for 15 event type(s)","service":"vtunova-api","timestamp":"2026-09-22 01:01:47"}
+{"environment":"production","level":"info","message":"VtuNova Platform running on port 3000 [production]","service":"vtunova-api","timestamp":"2026-09-22 01:01:47"}
+{"environment":"production","level":"info","message":"API Docs: http://localhost:3000/api","service":"vtunova-api","timestamp":"2026-09-22 01:01:47"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 01:02:35"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 01:02:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 01:02:37"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 01:03:19"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 01:03:20"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 01:03:21"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 01:03:34"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 01:03:35"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 01:03:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 01:04:34"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 01:04:35"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 01:04:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 01:05:34"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:transactions","service":"vtunova-api","timestamp":"2026-09-22 01:05:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:notifications","service":"vtunova-api","timestamp":"2026-09-22 01:05:36"}
+{"environment":"production","level":"info","message":"Cache hit for key: user:6ab1b4bf9a0f8bcba1da712b:profile","service":"vtunova-api","timestamp":"2026-09-22 01:06:34"}
+{"environment":"production","level":"info","message":"SIGINT received. Shutting down gracefully...","service":"vtunova-api","timestamp":"2026-09-22 01:06:35"}
