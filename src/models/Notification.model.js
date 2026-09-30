@@ -1,7 +1,8 @@
-const { required } = require('joi');
 const mongoose = require('mongoose');
+const { TRANSACTION_STATUSES, WALLET_STATES } = require('../config/constants');
 
 const notificationSchema = new mongoose.Schema({
+    eventId: { type: String, maxlength: 160 },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -15,6 +16,16 @@ const notificationSchema = new mongoose.Schema({
 
     category: {
         type: String
+    },
+
+    status: {
+        type: String,
+        enum: Object.values(TRANSACTION_STATUSES)
+    },
+
+    walletState: {
+        type: String,
+        enum: Object.values(WALLET_STATES)
     },
 
     message: {
@@ -32,6 +43,14 @@ const notificationSchema = new mongoose.Schema({
 
     amount: {
         type: Number
+    },
+    
+    ip: {
+        type: String
+    },
+
+    device: {
+        type: String
     },
 
     service: {
@@ -52,5 +71,12 @@ const notificationSchema = new mongoose.Schema({
         default: false
     }
 }, { timestamps: true });
+
+// Queue jobs can be removed; the persisted transition remains unique.
+notificationSchema.index({ eventId: 1 }, {
+    unique: true, partialFilterExpression: { eventId: { $type: 'string' } },
+});
+
+
 
 module.exports = mongoose.model('Notification', notificationSchema);

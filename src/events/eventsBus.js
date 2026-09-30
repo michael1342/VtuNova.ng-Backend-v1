@@ -7,23 +7,19 @@ class AppEvent extends EventEmiter {
         this.setMaxListeners(50)
     }
 
-     emitSafe(eventName, payload) {
-    logger.debug(`Event emitted: ${eventName}`);
- const listeners = this.rawListeners(eventName);
+    async emitSafe(eventName, payload) {
+        logger.debug(`Event emitted: ${eventName}`);
+        const listeners = this.rawListeners(eventName);
 
-    for (const listener of listeners) {
-      try {
-        const result = listener.call(this, payload);
-        if (result && typeof result.then === 'function') {
-          result.catch((err) =>
-            logger.error(`Async event listener for "${eventName}" rejected: ${err}`)
-          );
-        }
-      } catch (err) {
-        logger.error(`Event listener for "${eventName}" threw: ${err.message}`)
-      }
+        // Await enqueueing so a draining worker does not close queues too early.
+        await Promise.all(listeners.map(async (listener) => {
+            try {
+                await listener.call(this, payload);
+            } catch (err) {
+                logger.error(`Event listener for "${eventName}" threw: ${err.message}`)
+            }
+        }));
     }
-  }
 }
 
 module.exports = new AppEvent();

@@ -23,6 +23,10 @@ const getFullName = (user = {}) =>
     `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
     'there';
 
+const getReference = (transaction) => transaction.requestId ||
+    transaction.transactionReference || transaction.reference ||
+    transaction.transactionId || String(transaction._id);
+
 
 const safe = (name, handler) => async (payload) => {
     try {
@@ -40,6 +44,18 @@ const safe = (name, handler) => async (payload) => {
 ============================================================ */
 
 function registerEmailListeners() {
+
+    //--------------SERVICE-SPECIFIC TERMINAL RECEIPTS--------------//
+    for (const event of [EVENTS.AIRTIME_PURCHASE, EVENTS.DATA_PURCHASE,
+        EVENTS.ELECTRICITY_PURCHASE, EVENTS.CABLE_TV_PURCHASE]) {
+        eventBus.on(event, safe('purchaseReceipt', async ({ user, transaction, status, eventId }) => {
+            if (!user?._id || !transaction?._id || !['success', 'failed'].includes(status)) return;
+            await emailQueue.add('purchaseReceipt', {
+                userId: String(user._id), transaction, status, event,
+                eventId: eventId || `${transaction._id}-${status}`,
+            }, { jobId: eventId || `${transaction._id}-${status}` });
+        }));
+    }
 
 
     /* ========================================================
@@ -147,6 +163,9 @@ function registerEmailListeners() {
                         EVENTS.USER_EMAIL_VERIFICATION_REQUESTED,
                 }
             );
+             logger.info(
+            `Email listener "${EVENTS.USER_EMAIL_VERIFICATION_REQUESTED}" registered`
+        )
         })
     );
 
@@ -217,7 +236,7 @@ function registerEmailListeners() {
         EVENTS.TRANSACTION_SUCCESSFUL,
         safe(
             'transactionSuccessful',
-            async ({ user, transaction, wallet }) => {
+            async ({ user, transaction, wallet, eventId }) => {
                 if (!user?.email) return;
 
                 await emailService.send(
@@ -227,17 +246,21 @@ function registerEmailListeners() {
                         fullName: getFullName(user),
 
                         service:
+                            transaction.product_name ||
                             transaction.service ||
                             transaction.type ||
                             'Transaction',
 
                         network:
                             transaction.network ||
+                            transaction.serviceID ||
                             transaction.provider ||
                             '—',
 
                         recipient:
                             transaction.recipient ||
+                            transaction.billersCode ||
+                            transaction.phone ||
                             transaction.phoneNumber ||
                             transaction.meterNumber ||
                             transaction.smartCardNumber ||
@@ -245,9 +268,8 @@ function registerEmailListeners() {
 
                         amount: transaction.amount,
 
-                        reference:
-                            transaction.reference ||
-                            transaction.transactionId,
+                        reference: getReference(transaction),
+                        purchasedCode: transaction.purchasedCode,
 
                         paymentMethod:
                             transaction.paymentMethod ||
@@ -268,7 +290,7 @@ function registerEmailListeners() {
                             EVENTS.TRANSACTION_SUCCESSFUL,
 
                         dedupeKey:
-                            `transactionSuccessful:${transaction.reference}`,
+                            eventId || `transactionSuccessful:${getReference(transaction)}`,
 
                         relatedUser: user._id,
                     }
@@ -282,7 +304,7 @@ function registerEmailListeners() {
         EVENTS.TRANSACTION_FAILED,
         safe(
             'transactionFailed',
-            async ({ user, transaction }) => {
+            async ({ user, transaction, eventId }) => {
                 if (!user?.email) return;
 
                 await emailService.send(
@@ -292,15 +314,15 @@ function registerEmailListeners() {
                         fullName: getFullName(user),
 
                         service:
+                            transaction?.product_name ||
                             transaction?.service ||
                             transaction?.type ||
                             'Transaction',
 
                         amount: transaction.amount,
 
-                        reference:
-                            transaction.reference ||
-                            transaction.transactionId,
+                        reference: getReference(transaction),
+                        walletState: transaction.walletState,
 
                         reason:
                             transaction.reason ||
@@ -314,7 +336,7 @@ function registerEmailListeners() {
                             EVENTS.TRANSACTION_FAILED,
 
                         dedupeKey:
-                            `transactionFailed:${transaction.reference}`,
+                            eventId || `transactionFailed:${getReference(transaction)}`,
 
                         relatedUser: user._id,
                     }

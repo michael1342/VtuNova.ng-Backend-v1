@@ -19,6 +19,10 @@ const fullName = (user = {}) =>
 
 const portal = (path = '') => `${BRAND.url}${path}`;
 
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[character]));
+
 
 /* ============================================================
    EMAIL TEMPLATES
@@ -377,6 +381,7 @@ ${BRAND.supportEmail}.
                 ['Service', data.service || '—'],
                 ['Network', data.network || '—'],
                 ['Recipient', data.recipient || '—'],
+                ...(data.purchasedCode ? [['Purchased Code', escapeHtml(data.purchasedCode)]] : []),
                 ['Amount', `₦${data.amount}`],
                 ['Reference', data.reference],
                 ['Payment Method', data.paymentMethod || 'VtuNova Wallet'],
@@ -406,6 +411,7 @@ Reference: ${data.reference}
 New Balance: ₦${data.newBalance}
 
 Thank you for using ${BRAND.name}.
+${data.purchasedCode ? `\nPurchased Code: ${data.purchasedCode}` : ''}
         `.trim(),
     }),
 
@@ -431,7 +437,11 @@ Thank you for using ${BRAND.name}.
             ]) +
 
             infoNote(
-                'If your wallet was debited, please allow some time for the transaction to be processed or reversed.',
+                  data.walletState === 'refunded'
+                      ? 'The transaction amount has been returned to your VtuNova wallet.'
+                      : data.walletState === 'released'
+                          ? 'Your reserved funds have been released. Your wallet balance was not charged.'
+                      : 'If your wallet was debited, please allow some time for the transaction to be processed or reversed.',
                 '#D97706'
             ) +
 
@@ -456,7 +466,11 @@ Amount: ₦${data.amount}
 Reference: ${data.reference || '—'}
 Reason: ${data.reason || 'Unknown'}
 
-If you were debited, please contact support if the issue persists.
+  ${data.walletState === 'refunded'
+      ? 'The transaction amount has been returned to your VtuNova wallet.'
+      : data.walletState === 'released'
+          ? 'Your reserved funds have been released. Your wallet balance was not charged.'
+      : 'If you were debited, please contact support if the issue persists.'}
         `.trim(),
     }),
 

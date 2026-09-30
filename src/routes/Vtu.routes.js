@@ -9,4 +9,7 @@ router.post('/verify-meter-number', Protect, vtuController.verifyMeter);
 router.post('/buy-electricity', Protect, vtuController.byIkejaElectric);
 
 
+//------ Quick Teller ------------//
+router.get('/quickteller/get-airtime-billers', Protect, vtuController.getQuicktellerAirtimeBillers);
+
 module.exports = router;

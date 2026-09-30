@@ -68,7 +68,16 @@ const userSchema = new mongoose.Schema({
             type: String,
             default: "active",
             enum: ["active", "inactive"]
-        }
+        },
+        reserved: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+        validator: Number.isSafeInteger,
+        message: 'Reserved balance must be a safe whole-number amount',
+    },
+},
     },
 
     referrals: [{
@@ -125,6 +134,16 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+
+    reserved: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+        validator: Number.isSafeInteger,
+        message: 'Reserved balance must be a safe whole-number amount',
+    },
+},
 
     passwordChangedAt: Date,
     passwordResetToken: String,

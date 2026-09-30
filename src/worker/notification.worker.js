@@ -81,6 +81,12 @@ const notificationWorker = new Worker(
                 break;
             }
 
+            case 'pendingPurchaseNotification': {
+                logger.info(`[notif-worker] Processing pending purchase notification for user ${job.data.userId || job.data.user}`);
+                await persist({ ...job.data, type: 'pendingPurchase', user: job.data.user || job.data.userId });
+                break;
+            }
+
             /* ── Default fallback for unknown job types ── */
             default: {
                 logger.warn(`[notif-worker] Unhandled job name: ${job.name}. Falling back to default persistence.`);

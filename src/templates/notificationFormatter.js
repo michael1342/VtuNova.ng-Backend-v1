@@ -1,5 +1,3 @@
-const logger = require('../utils/logger');
-
 class NotificationFormatter {
      formatNotification(notification = {}) {
         const normalized = { ...notification };
@@ -13,7 +11,11 @@ class NotificationFormatter {
             title: title || 'Notification',
             message: message || 'You have a new notification.',
             category: this.determineCategory(normalized.category),
-            _id: normalized._id || 'not found'
+            status: normalized.status,
+            walletState: normalized.walletState,
+            _id: normalized._id || 'not found',
+            date: notification?.date,
+            isRead: notification?.isRead
         };
     }
 
@@ -31,15 +33,13 @@ class NotificationFormatter {
             case 'loginAlert':
                 return 'Login Alert';
             case 'transaction':
-               if(checkCategory === 'airtime' || checkCategory === 'data' || checkCategory === 'electricity' || checkCategory === 'cable' && notification.status === 'pending') {
-                    return `${checkCategory} Purchace`;
+                if (['airtime', 'data', 'electricity', 'cable', 'vtu'].includes(checkCategory)) {
+                    const service = checkCategory.charAt(0).toUpperCase() + checkCategory.slice(1);
+                    const outcome = { pending: 'Processing', success: 'Successful',
+                        failed: 'Failed', reversed: 'Reversed' }[notification.status];
+                    return `${service} Purchase${outcome ? ` ${outcome}` : ''}`;
                 }
-                if(checkCategory === 'airtime' || checkCategory === 'data' || checkCategory === 'electricity' || checkCategory === 'cable' && notification.status === 'failed') {
-                    return `${checkCategory} Purchace`;
-                }
-                if(checkCategory === 'airtime' || checkCategory === 'data' || checkCategory === 'electricity' || checkCategory === 'cable' && notification.status === 'success') {
-                    return `${checkCategory} Purchace`;
-                }
+                return 'Transaction Update';
             case 'deposit':
                 return 'Wallet Top-Up';
             case 'wallet':
@@ -79,16 +79,18 @@ class NotificationFormatter {
             
                 return `A new login was detected from IP ${safeIp} using ${safeDevice}.`;
             case 'transaction':
-                    if (checkCategory === 'airtime' || checkCategory === 'data' || checkCategory === 'electricity' || checkCategory === 'cable' && notification.status === 'pending') {
-                        return `Your ${checkCategory} purchace${notification.amount ? ` for ₦${notification.amount}` : ''} is being processed.`;
+                if (['airtime', 'data', 'electricity', 'cable', 'vtu'].includes(checkCategory)) {
+                    const purchase = `Your ${checkCategory} purchase${notification.amount ? ` for ₦${notification.amount}` : ''}`;
+                    if (notification.status === 'pending') return `${purchase} is being processed.`;
+                    if (notification.status === 'success') return `${purchase} has been completed.`;
+                    if (notification.status === 'failed') {
+                        return `${purchase} could not be completed.${notification.walletState === 'refunded'
+                            ? ' The amount has been returned to your VtuNova wallet.'
+                            : notification.walletState === 'released' ? ' Your reserved funds have been released.' : ''}`;
                     }
-                    if (checkCategory === 'airtime' || checkCategory === 'data' || checkCategory === 'electricity' || checkCategory === 'cable' && notification.status === 'failed') {
-                        return `Your airtime purchace${notification.amount ? ` for ₦${notification.amount}` : ''} has failed.`;
-                    }
-
-                    if (checkCategory === 'airtime' || checkCategory === 'data' || checkCategory === 'electricity' || checkCategory === 'cable' && notification.status === 'success') {
-                        return `Your airtime purchace${notification.amount ? ` for ₦${notification.amount}` : ''} has been completed.`;
-                    }
+                    if (notification.status === 'reversed') return `${purchase} has been reversed.`;
+                }
+                return 'Your transaction has been updated.';
             case 'wallet':
                 return `Your wallet activity has been updated${notification.amount ? ` by ₦${notification.amount}` : ''}.`;
             case 'system':

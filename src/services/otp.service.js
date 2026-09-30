@@ -5,6 +5,7 @@ const cacheKeys = require('../utils/cacheKeys');
 const eventBus = require('../events/eventsBus');
 const EVENTS = require('../events/events');
 const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
 const DEFAULT_OTP_TTL_SECONDS = 10 * 60;
 

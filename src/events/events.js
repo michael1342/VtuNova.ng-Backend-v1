@@ -15,6 +15,7 @@ const EVENTS = {
     TRANSACTION_SUCCESSFUL: 'transaction.successful',
     TRANSACTION_FAILED: 'transaction.failed',
     TRANSACTION_REVERSED: 'transaction.reversed',
+    TRANSACTION_PENDING: 'transaction.pending',
     WALLET_CREATED: 'wallet.created',
     WALLET_UPDATED: 'wallet.updated',
     WALLET_DELETED: 'wallet.deleted',
@@ -23,6 +24,10 @@ const EVENTS = {
     WITHDRAWAL_SUCCESSFUL: 'withdrawal.successful',
     AIRTIME_PURCHASE: 'airtime.purchase',
     DATA_PURCHASE: 'data.purchase',
+    ELECTRICITY_PURCHASE: 'electricity.purchase',
+    CABLE_TV_PURCHASE: 'cable-tv.purchase',
+    IKEJA_ELECTRIC_PURCHASE: 'electricity.purchase',
+    VTU_DATA_PLANS_REFRESHED: 'vtu.data-plans.refreshed',
     PAYMENT_SUCCESS: 'payment.success',
 }
 

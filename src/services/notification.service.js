@@ -17,9 +17,22 @@ class NotificationService {
     try {
       if (!notificationData) throw new AppError('notification data is required', 400)
 
-    const notification = await Notification.create({
-     ...notificationData
-    })
+    let notification;
+    if (notificationData.eventId) {
+      try {
+        notification = await Notification.findOneAndUpdate(
+          { eventId: notificationData.eventId },
+          { $setOnInsert: notificationData },
+          { upsert: true, returnDocument: 'after', runValidators: true }
+        );
+      } catch (err) {
+        if (err.code !== 11000) throw err;
+        notification = await Notification.findOne({ eventId: notificationData.eventId });
+        if (!notification) throw err;
+      }
+    } else {
+      notification = await Notification.create({ ...notificationData });
+    }
     logger.info('Notification created:')
 
     const transaction = await Transaction.findOne({ transactionId: notificationData?.transactionId }).sort({ createdAt: -1 })
@@ -52,11 +65,14 @@ class NotificationService {
                    type: notification?.type,
                    title: notification?.title,
                    message: notification?.message,
+                   category: notification?.category,
+                   status: notification?.status,
+                   walletState: notification?.walletState,
                    amount: transaction?.amount || notification?.amount,
                    product_name: transaction?.product_name || notification?.product_name,
                      service: transaction?.service || notification?.service,
-                   ip: req?.ip,
-                     device,
+                   ip: notification?.ip,
+                     device: notification?.device,
                      _id: notification._id
                });
 
@@ -101,10 +117,14 @@ class NotificationService {
             amount: transaction?.amount || notification?.amount,
             product_name: transaction?.product_name || notification?.product_name,
             service: transaction?.service || notification?.service,
-            ip: req?.ip,
-            device,
+            ip: notification.ip,
+            device: notification.device,
             category: notification?.category,
-            _id: notification._id
+            status: notification?.status,
+            walletState: notification?.walletState,
+            _id: notification._id,
+            date: notification?.date,
+            isRead: notification?.isRead || null
           }
           return  formatter.formatNotification(notificationData)
         })
