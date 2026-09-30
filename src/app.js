@@ -81,7 +81,12 @@ app.use(globalLimiter);
 
 // ── Static files ──────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
-app.use("/upload", express.static(path.join(process.cwd(), "upload")));
+
+app.use(
+    "/upload",
+    helmet.crossOriginResourcePolicy({ policy: "cross-origin" }),
+    express.static(path.join(process.cwd(), "upload"))
+);
 
 // ── Health check ──────────────────────────────────────────────────
 app.get('/health', (req, res) => {

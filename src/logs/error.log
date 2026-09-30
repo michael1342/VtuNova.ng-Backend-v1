@@ -2207,3 +2207,16 @@
 {"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:profile","service":"vtunova-api","timestamp":"2026-09-30 17:26:45"}
 {"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:notifications","service":"vtunova-api","timestamp":"2026-09-30 17:27:05"}
 {"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:profile","service":"vtunova-api","timestamp":"2026-09-30 17:27:05"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6abd38443333c4be3fc35f3a:transaction","service":"vtunova-api","timestamp":"2026-09-30 17:32:14"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:profile","service":"vtunova-api","timestamp":"2026-09-30 17:32:16"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6aafdfc1d13727f3d0cced82:profile","service":"vtunova-api","timestamp":"2026-09-30 17:51:06"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6aafdfc1d13727f3d0cced82:notifications","service":"vtunova-api","timestamp":"2026-09-30 17:51:22"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6aafdfc1d13727f3d0cced82:profile","service":"vtunova-api","timestamp":"2026-09-30 17:51:22"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6aafdfc1d13727f3d0cced82:notifications","service":"vtunova-api","timestamp":"2026-09-30 17:52:37"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6aafdfc1d13727f3d0cced82:profile","service":"vtunova-api","timestamp":"2026-09-30 17:52:38"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6aafdfc1d13727f3d0cced82:profile","service":"vtunova-api","timestamp":"2026-09-30 17:56:14"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:profile","service":"vtunova-api","timestamp":"2026-09-30 18:18:30"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:profile","service":"vtunova-api","timestamp":"2026-09-30 18:18:32"}
+{"environment":"production","level":"error","message":"Failed to invalidate cache for key: user:6ab6883b3a62803357ccc58c:profile","service":"vtunova-api","timestamp":"2026-09-30 18:18:56"}
+{"code":"ETIMEDOUT","environment":"production","errorName":"Error","level":"error","message":"Purchase reconciliation worker error","service":"vtunova-api","timestamp":"2026-09-30 18:19:20"}
+{"code":"ETIMEDOUT","environment":"production","errorName":"Error","level":"error","message":"Email worker error","service":"vtunova-api","timestamp":"2026-09-30 18:19:20"}
