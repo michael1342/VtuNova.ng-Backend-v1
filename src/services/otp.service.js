@@ -34,6 +34,7 @@ class OtpService {
         const cacheKey = cacheKeys.otp(normalizedEmail, purpose);
 
         const payload = {
+            credentialId: crypto.randomUUID(),
             email: normalizedEmail,
             purpose,
             otpHash: this.hashOtp(normalizedEmail, otp, purpose),
@@ -42,7 +43,7 @@ class OtpService {
 
         await redisCache.set(payload, cacheKey, ttlSeconds);
 
-        return cacheKey;
+        return { credential: { kind: 'otp', id: payload.credentialId, purpose }, expiresAt: payload.expiresAt };
     }
 
     async verifyOtp(email, otp, purpose) {
@@ -50,7 +51,7 @@ class OtpService {
         const cacheKey = cacheKeys.otp(normalizedEmail, purpose);
         const savedOtp = await redisCache.retrieve(cacheKey);
 
-        if (!savedOtp) {
+        if (!savedOtp || new Date(savedOtp.expiresAt) <= new Date()) {
             throw new AppError('OTP has expired or is invalid.', 400);
         }
 
@@ -67,25 +68,27 @@ class OtpService {
 
     async createEmailVerificationOtp(email, name) {
         const otp = this.generateOtp();
-        await this.saveOtpToDb(email, otp, 'email_verification');
+        const validity = await this.saveOtpToDb(email, otp, 'email_verification');
 
-        eventBus.emitSafe(EVENTS.USER_EMAIL_VERIFICATION_REQUESTED, {
+        await eventBus.emitSafe(EVENTS.USER_EMAIL_VERIFICATION_REQUESTED, {
+            ...validity,
             email,
             name,
             otp,
             expiresInMinutes: Math.ceil(this.getTtlSeconds() / 60),
-        });
+        }, { throwOnError: true });
     }
 
     async createPasswordResetOtp(user) {
         const otp = this.generateOtp();
-        await this.saveOtpToDb(user.email, otp, 'password_reset');
+        const validity = await this.saveOtpToDb(user.email, otp, 'password_reset');
 
-        eventBus.emitSafe(EVENTS.USER_PASSWORD_RESET_REQUESTED, {
+        await eventBus.emitSafe(EVENTS.USER_PASSWORD_RESET_REQUESTED, {
+            ...validity,
             user,
             otp,
             expiresInMinutes: Math.ceil(this.getTtlSeconds() / 60),
-        });
+        }, { throwOnError: true });
     }
 }
 

@@ -119,7 +119,7 @@ class AuthService {
         const token = signInToken(String(user._id));
 
         // eventBus → listener → queue → worker
-        eventBus.emitSafe(EVENTS.USER_CREATED, { user });
+        await eventBus.emitSafe(EVENTS.USER_CREATED, { user });
 
         // Invalidate cache
         await RedisCache.invalidate(cacheKeys.userProfile(user._id));
@@ -214,7 +214,7 @@ class AuthService {
         await user.save()
 
         if (isNewLoginContext) {
-            eventBus.emitSafe(EVENTS.NEW_LOGIN, {
+            await eventBus.emitSafe(EVENTS.NEW_LOGIN, {
             user,
             ip,
             device,
@@ -223,7 +223,7 @@ class AuthService {
             });
         }
 
-        eventBus.emitSafe(EVENTS.USER_LOGIN, {
+        await eventBus.emitSafe(EVENTS.USER_LOGIN, {
             user,
             ip,
             device,

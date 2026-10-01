@@ -1,23 +1,19 @@
-const { Queue } = require('bullmq');
-require('dotenv').config();
+'use strict';
 
-const emailQueue = new Queue('emailQueue', {
-    connection: {
-        host: process.env.REDIS_HOST,
-        port: Number(process.env.REDIS_PORT),
-        password: process.env.REDIS_PASSWORD
-    },
+const { Queue } = require('bullmq');
+const config = require('../config/email');
+const logger = require('../utils/logger');
+
+//--------------SHARED EMAIL QUEUE / BOUNDED JOB HISTORY--------------//
+const emailQueue = new Queue(config.queueName, {
+    connection: config.connection,
     defaultJobOptions: {
-        removeOnComplete: true,
-        removeOnFail: true,
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 1000,
-        },
+        attempts: config.maxAttempts,
+        backoff: { type: 'email', delay: config.backoffMs },
+        removeOnComplete: { age: 86400, count: 1000 },
+        removeOnFail: { age: config.failedJobAge, count: config.failedJobCount },
     },
 });
+emailQueue.on('error', () => logger.error('Email queue unavailable'));
 
-module.exports = {
-    emailQueue
-}
+module.exports = { emailQueue };

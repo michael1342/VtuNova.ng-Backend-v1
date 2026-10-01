@@ -169,7 +169,6 @@ for (const type of ['airtime', 'data', 'electricity', 'cable']) {
         test(`${type} ${status} reaches email and notification listeners with consistent details`, async () => {
             const jobs = [];
             const emails = [];
-            const emailJobs = [];
             const bus = load('src/events/eventsBus.js', { '../utils/logger': logger });
             const safe = load('src/utils/safe.js', { './logger': logger });
             load('src/listeners/notifications.listener.js', {
@@ -178,24 +177,14 @@ for (const type of ['airtime', 'data', 'electricity', 'cable']) {
             })();
             load('src/listeners/email.listener.js', {
                 '../events/eventsBus.js': bus, '../utils/logger': logger,
-                '../services/email.service': { async send(...args) { emails.push(args); } },
-                '../queue/email.queue': { emailQueue: { async add(...args) { emailJobs.push(args); } } }
-            })();
-            const Worker = class {
-                constructor(name, processor) { this.processor = processor; }
-                on() {}
-            };
-            const emailWorker = load('src/worker/email.worker.js', {
-                bullmq: { Worker }, dotenv: { config() {} }, '../utils/logger': logger,
                 '../models/User.model': { findById() { return query(() => user); } },
                 '../services/email.service': { async send(...args) { emails.push(args); } },
-            });
+            })();
             const service = makeService({ users: { async findById() { return user; } }, events: bus });
             const transaction = purchase({ type, status, walletState: status === 'success' ? 'charged' : 'refunded',
                 billersCode: type === 'electricity' ? '12345678901' : undefined,
                 purchasedCode: type === 'electricity' && status === 'success' ? '1234-5678-9012' : undefined });
             await service.notify(transaction);
-            for (const [name, data] of emailJobs) await emailWorker.processor({ name, data });
             assert.equal(jobs.length, 1);
             assert.equal(emails.length, status === 'pending' ? 0 : 1);
             const [, notification, options] = jobs[0];
@@ -203,14 +192,16 @@ for (const type of ['airtime', 'data', 'electricity', 'cable']) {
             assert.equal(notification.status, status);
             assert.equal(notification.amount, 500);
             assert.equal(options.jobId, `${transaction._id}-${status}`);
-            assert.match(notification.message, status === 'pending' ? /being processed/ :
+            // Notifications are formatted on retrieval, after the raw queue payload.
+            const formatted = formatter.formatNotification(notification);
+            assert.match(formatted.message, status === 'pending' ? /being processed/ :
                 status === 'success' ? /has been completed/ : /returned to your VtuNova wallet/);
             const persisted = new Notification(notification);
             await persisted.validate();
             assert.equal(persisted.status, status);
             if (status === 'pending') {
-                assert.match(notification.title, /Processing/);
-                assert.doesNotMatch(notification.title, /Successful/);
+                assert.match(formatted.title, /Processing/);
+                assert.doesNotMatch(formatted.title, /Successful/);
                 return;
             }
             const [template, address, data, meta] = emails[0];

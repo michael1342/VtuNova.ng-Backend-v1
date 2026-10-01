@@ -188,15 +188,15 @@ If this wasn't you, contact ${BRAND.supportEmail} immediately.
                 'We received a request to reset your VtuNova account password.'
             ) +
 
-            paragraph(
-                'Click the button below to create a new password. ' +
-                'If you did not request this, you can safely ignore this email.'
-            ) +
+            paragraph('If you did not request this, you can safely ignore this email.') +
 
-            button(
+            (data.otp ? detailBox([
+                ['Password reset code', escapeHtml(data.otp)],
+                ['Expires in', `${data.expiresInMinutes} minutes`],
+            ]) : button(
                 'Reset Password',
                 data.resetUrl
-            ) +
+            )) +
 
             infoNote(
                 'For security reasons, this password reset link may expire after a limited period.',
@@ -214,8 +214,7 @@ Hello ${data.fullName || 'there'},
 
 We received a request to reset your password.
 
-Reset your password here:
-${data.resetUrl}
+${data.otp ? `Your password reset code is: ${data.otp}\nIt expires in ${data.expiresInMinutes} minutes.` : `Reset your password here:\n${data.resetUrl}`}
 
 If you did not request this, you can ignore this email.
         `.trim(),

@@ -2,7 +2,8 @@ const eventBus = require('../events/eventsBus.js');
 const EVENTS = require('../events/events');
 const emailService = require('../services/email.service');
 const logger = require('../utils/logger');
-const {emailQueue} = require('../queue/email.queue');
+const crypto = require('node:crypto');
+const User = require('../models/User.model');
 // const {EVENTS} = require('../events/events');
 
 
@@ -30,11 +31,12 @@ const getReference = (transaction) => transaction.requestId ||
 
 const safe = (name, handler) => async (payload) => {
     try {
+        // Preserve identity when the same event object is emitted again.
+        payload.eventId ||= crypto.randomUUID();
         await handler(payload);
     } catch (err) {
-        logger.error(`Email listener "${name}" failed: ${err.message}`, {
-            stack: err.stack,
-        });
+        logger.error('Email listener could not persist intent', { listener: name });
+        throw new Error('email_intent_unavailable');
     }
 };
 
@@ -44,16 +46,31 @@ const safe = (name, handler) => async (payload) => {
 ============================================================ */
 
 function registerEmailListeners() {
+    if (registerEmailListeners.registered) return;
+    registerEmailListeners.registered = true;
 
     //--------------SERVICE-SPECIFIC TERMINAL RECEIPTS--------------//
     for (const event of [EVENTS.AIRTIME_PURCHASE, EVENTS.DATA_PURCHASE,
         EVENTS.ELECTRICITY_PURCHASE, EVENTS.CABLE_TV_PURCHASE]) {
-        eventBus.on(event, safe('purchaseReceipt', async ({ user, transaction, status, eventId }) => {
+        eventBus.on(event, safe('purchaseReceipt', async ({ user, transaction, status }) => {
             if (!user?._id || !transaction?._id || !['success', 'failed'].includes(status)) return;
-            await emailQueue.add('purchaseReceipt', {
-                userId: String(user._id), transaction, status, event,
-                eventId: eventId || `${transaction._id}-${status}`,
-            }, { jobId: eventId || `${transaction._id}-${status}` });
+            // Purchase events carry only user ID; snapshot recipient/balance before enqueue.
+            if (!user.email) user = await User.findById(user._id).select('email firstName lastName wallet');
+            if (!user?.email) return;
+            await emailService.send(status === 'success' ? 'transactionSuccessful' : 'transactionFailed',
+                user.email, {
+                    fullName: getFullName(user),
+                    service: transaction.product_name || transaction.service || transaction.type,
+                    network: transaction.serviceID || transaction.provider,
+                    recipient: transaction.recipient || transaction.billersCode || transaction.phone,
+                    amount: transaction.amount,
+                    reference: getReference(transaction),
+                    purchasedCode: transaction.purchasedCode,
+                    walletState: transaction.walletState,
+                    newBalance: user.wallet?.balance,
+                    transactionId: transaction._id,
+                    time: new Date(transaction.settledAt || Date.now()).toLocaleString('en-GB', { timeZone: 'Africa/Lagos' }),
+                }, { triggeredBy: event, dedupeKey: `${transaction._id}-${status}`, relatedUser: user._id });
         }));
     }
 
@@ -84,18 +101,16 @@ function registerEmailListeners() {
 
     eventBus.on(
         EVENTS.NEW_LOGIN,
-        safe('loginAlert', async ({ user, ip, device, browser }) => {
+        safe('loginAlert', async ({ user, ip, device, browser, eventId }) => {
             if (!user?.email) return;
             
-            await emailQueue.add('loginAlert', {
-                email: user.email,
-                subject: 'New Login Alert',
+            await emailService.send('loginAlert', user.email, {
                 fullName: getFullName(user),
                 time: now(),
-                ip,
+                ipAddress: ip,
                 device: `${device} (${browser})`,
-                message: `Hello ${getFullName(user)}, we noticed a new login to your account from IP address ${ip} using ${device} (${browser}). If this was you, no action is needed. If not, please secure your account immediately.`,
-            });
+            }, { triggeredBy: EVENTS.NEW_LOGIN, relatedUser: user._id,
+                dedupeKey: `login:${user._id}:${user.lastLogin ? new Date(user.lastLogin).toISOString() : eventId}` });
             
         })
     );
@@ -105,7 +120,7 @@ function registerEmailListeners() {
 
     eventBus.on(
         EVENTS.USER_PASSWORD_CHANGED,
-        safe('passwordChanged', async ({ user }) => {
+        safe('passwordChanged', async ({ user, eventId }) => {
             if (!user?.email) return;
 
             await emailService.send(
@@ -117,6 +132,7 @@ function registerEmailListeners() {
                 },
                 {
                     triggeredBy: EVENTS.USER_PASSWORD_CHANGED,
+                    dedupeKey: `passwordChanged:${user._id}:${user.passwordChangedAt ? new Date(user.passwordChangedAt).toISOString() : eventId}`,
                     relatedUser: user._id,
                 }
             );
@@ -126,7 +142,7 @@ function registerEmailListeners() {
 
     eventBus.on(
         EVENTS.USER_PASSWORD_RESET_REQUESTED,
-        safe('passwordReset', async ({ user, resetUrl }) => {
+        safe('passwordReset', async ({ user, resetUrl, otp, expiresInMinutes, credential, expiresAt }) => {
             if (!user?.email) return;
 
             await emailService.send(
@@ -134,11 +150,16 @@ function registerEmailListeners() {
                 user.email,
                 {
                     fullName: getFullName(user),
-                    resetUrl,
+                    resetUrl, otp, expiresInMinutes,
                 },
                 {
                     triggeredBy: EVENTS.USER_PASSWORD_RESET_REQUESTED,
                     relatedUser: user._id,
+                    dedupeKey: `passwordReset:${credential?.id || user.passwordResetToken}`,
+                    expiresAt: expiresAt || user.passwordResetExpires,
+                    credential: credential || (user.passwordResetToken ? {
+                        kind: 'passwordReset', userId: String(user._id), tokenHash: user.passwordResetToken,
+                    } : null),
                 }
             );
         })
@@ -147,7 +168,7 @@ function registerEmailListeners() {
 
     eventBus.on(
         EVENTS.USER_EMAIL_VERIFICATION_REQUESTED,
-        safe('emailVerification', async ({ email, name, otp, expiresInMinutes }) => {
+        safe('emailVerification', async ({ email, name, otp, expiresInMinutes, credential, expiresAt }) => {
             if (!email || !otp) return;
 
             await emailService.send(
@@ -161,11 +182,10 @@ function registerEmailListeners() {
                 {
                     triggeredBy:
                         EVENTS.USER_EMAIL_VERIFICATION_REQUESTED,
+                    dedupeKey: `emailVerification:${credential?.id}`,
+                    credential, expiresAt,
                 }
             );
-             logger.info(
-            `Email listener "${EVENTS.USER_EMAIL_VERIFICATION_REQUESTED}" registered`
-        )
         })
     );
 
@@ -193,7 +213,7 @@ function registerEmailListeners() {
                 },
                 {
                     triggeredBy: EVENTS.WALLET_FUNDED,
-                    dedupeKey: `walletFunded:${transaction.reference}`,
+                    dedupeKey: `walletFunded:${getReference(transaction)}`,
                     relatedUser: user._id,
                 }
             );
@@ -220,7 +240,7 @@ function registerEmailListeners() {
                 },
                 {
                     triggeredBy: EVENTS.WALLET_DEBITED,
-                    dedupeKey: `walletDebit:${transaction.reference}`,
+                    dedupeKey: `walletDebit:${getReference(transaction)}`,
                     relatedUser: user._id,
                 }
             );
@@ -290,7 +310,7 @@ function registerEmailListeners() {
                             EVENTS.TRANSACTION_SUCCESSFUL,
 
                         dedupeKey:
-                            eventId || `transactionSuccessful:${getReference(transaction)}`,
+                            transaction._id ? `${transaction._id}-success` : `transactionSuccessful:${getReference(transaction)}`,
 
                         relatedUser: user._id,
                     }
@@ -336,7 +356,7 @@ function registerEmailListeners() {
                             EVENTS.TRANSACTION_FAILED,
 
                         dedupeKey:
-                            eventId || `transactionFailed:${getReference(transaction)}`,
+                            transaction._id ? `${transaction._id}-failed` : `transactionFailed:${getReference(transaction)}`,
 
                         relatedUser: user._id,
                     }
@@ -378,7 +398,7 @@ function registerEmailListeners() {
                             EVENTS.TRANSACTION_REVERSED,
 
                         dedupeKey:
-                            `transactionReversed:${transaction.reference}`,
+                            `transactionReversed:${getReference(transaction)}`,
 
                         relatedUser: user._id,
                     }
@@ -436,7 +456,7 @@ function registerEmailListeners() {
                             EVENTS.WITHDRAWAL_SUCCESSFUL,
 
                         dedupeKey:
-                            `withdrawalSuccessful:${transaction.reference}`,
+                            `withdrawalSuccessful:${getReference(transaction)}`,
 
                         relatedUser: user._id,
                     }

@@ -64,12 +64,16 @@ test('entry point connects, registers listeners and scheduler, runs and drains i
         './src/listeners/email.listener': () => calls.push('email-listeners'),
         './src/listeners/notifications.listener': () => calls.push('notification-listeners'),
         './src/jobs/reconciliation.scheduler': async () => calls.push('scheduler'),
+        './src/jobs/email.scheduler': async () => calls.push('email-scheduler'),
+        './src/models/EmailLog.model': { async createIndexes() { calls.push('email-indexes'); } },
+        './src/utils/email-payload': { validateKey() {} },
         './src/worker/reconciliation.worker': {
             ...closeable('reconciliation'), async waitUntilReady() {},
             run() { calls.push('run'); return new Promise(() => {}); },
         },
         './src/worker/notification.worker': closeable('notifications'),
-        './src/worker/email.worker': closeable('emails'),
+        './src/worker/email.worker': { ...closeable('emails'), async waitUntilReady() {},
+            run() { calls.push('email-run'); return new Promise(() => {}); } },
         './src/queue/reconciliation.queue': closeable('reconciliation-queue'),
         './src/queue/notifications.queue': closeable('notification-queue'),
         './src/queue/email.queue': { emailQueue: closeable('email-queue') },
@@ -77,7 +81,7 @@ test('entry point connects, registers listeners and scheduler, runs and drains i
         './src/services/email.service': { transporter: { close() { calls.push('smtp-close'); } } },
     });
     await runtime.startWorker();
-    assert.deepEqual(calls, ['connect', 'email-listeners', 'notification-listeners', 'scheduler', 'run']);
+    assert.deepEqual(calls, ['connect', 'email-indexes', 'email-listeners', 'notification-listeners', 'scheduler', 'email-scheduler', 'email-run', 'run']);
     await Promise.all([runtime.shutdown('SIGTERM'), runtime.shutdown('SIGINT')]);
     assert.equal(calls.filter((s) => s === 'close-reconciliation').length, 1);
     assert.ok(calls.indexOf('close-reconciliation') < calls.indexOf('close-notifications'));

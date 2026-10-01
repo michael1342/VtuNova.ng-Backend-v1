@@ -1,154 +1,69 @@
+'use strict';
+
 const nodemailer = require('nodemailer');
-const EmailLog = require('../models/EmailLog.model');
-const templates = require('../templates');
-const logger = require('../utils/logger');
-const { BRAND } = require('../templates/layout');
-require('dotenv').config();
+const { Resend } = require('resend');
+const config = require('../config/email');
+const { DeliveryError, classify } = require('../utils/email-errors');
 
 class EmailService {
     constructor() {
         this.transporter = null;
-        this.isConfigured = false;
-        this._init();
+        this.resend = null;
     }
 
-    _init() {
-        const { SMTP_HOST, SMTP_USER } = process.env;
-
-        if (!SMTP_HOST || !SMTP_USER) {
-            logger.warn('SMTP not configured — emails will be logged to console, not sent.');
-            this.isConfigured = false;
-            return;
-        }
-
-        this.transporter = nodemailer.createTransport({
-            host: SMTP_HOST,
-            port: Number(process.env.SMTP_PORT) || 587,
-            secure: Number(process.env.SMTP_PORT) === 465, // true only for implicit-TLS port
-            auth: { user: SMTP_USER, pass: process.env.SMTP_PASS },
-            pool: true,
-            maxConnections: 5,
-            maxMessages: 100,
-        });
-
-        this.isConfigured = true;
-        logger.info(`Email transport ready via ${SMTP_HOST}`);
-    }
-    async verify() {
-        if (!this.isConfigured) return;
-        try {
-            await this.transporter.verify();
-            logger.info('SMTP connection veried');
-            return true;
-
-        } catch (err) {
-            logger.error(`SMTP verification failed : ${err.message}`);
-            return false;
-        }
+    //--------------PUBLIC API: PERSIST INTENT, THEN ENQUEUE; NEVER SEND HERE--------------//
+    send(templateName, to, data, meta = {}) {
+        return require('../jobs/email.job').enqueue(templateName, to, data, meta);
     }
 
-    async send(templateName, to, data, meta = {}) {
-        //run email regex on receiver email
-        if (!to || !/^\S+@\S+\.\S+$/.test(to)) {
-            logger.warn(`Skipping email "${templateName}" — invalid recipient: ${to}`);
-            return;
-        }
+    // Compatibility entry point repairs queue state; it never calls a provider.
+    retryFailed(batchSize) {
+        return require('../jobs/email.job').recover(batchSize);
+    }
 
-        let rendered;
+    //--------------ONE PROVIDER CALL PER WORKER ATTEMPT--------------//
+    async deliver(log, request) {
         try {
-            rendered = templates.render(templateName, data);
-        } catch (err) {
-            logger.error(`Template render failed for "${templateName}": ${err.message}`);
-            return;
-        }
-
-        let log;
-        try {
-            // log = await EmailLog.create({
-            //     to,
-            //     subject: rendered.subject,
-            //     template: templateName,
-            //     triggeredBy: meta.triggeredBy,
-            //     dedupeKey: meta.dedupeKey,
-            //     relatedCandidate: meta.relatedCandidate,
-            //     relatedUser: meta.relatedUser,
-            //     renderContext: data,
-            //     status: 'queued',
-            // });
-        } catch (err) {
-            if (err.code === 11000) {
-                logger.debug(`Duplicate email suppressed: ${meta.dedupeKey}`);
-                return;
+            if (!request.from) throw new DeliveryError('email_sender_missing');
+            if (log.provider === 'resend') {
+                if (!process.env.RESEND_API_KEY) throw new DeliveryError('resend_configuration_missing');
+                if (!this.resend) {
+                    this.resend = new Resend(process.env.RESEND_API_KEY, { baseUrl: 'https://api.resend.com' });
+                    // SDK 6.31 logs raw API errors in development. Suppress that output.
+                    this.resend.logError = () => {};
+                }
+                const result = await this.resend.emails.send(request, {
+                    idempotencyKey: log.dedupeKey,
+                    signal: AbortSignal.timeout(config.timeoutMs),
+                });
+                if (result.error) throw classify(result.error, 'resend', result.headers);
+                if (!result.data?.id) throw new DeliveryError('provider_response_incomplete', { retryable: true, ambiguous: true });
+                return { providerMessageId: result.data.id };
             }
-            logger.error(`Failed to create email log: ${err.message}`);
-            // Still try to deliver even if logging failed — best effort.
-            return this._deliver(null, to, rendered);
-        }
-
-        return this._deliver(null, to, rendered);
-    }
-
-    async _deliver(log, to, rendered) {
-        if (log) await log.markSending().catch(() => { });
-        if (!this.isConfigured) {
-            logger.info(
-                `\n──── EMAIL (dev, not sent) ────\n` +
-                `To: ${to}\n` +
-                `Subject: ${rendered.subject}\n` +
-                `───────────────────────────────`
-            );
-            if (log) await log.markSent('dev-console').catch(() => { });
-            return;
-        }
-        try {
-            const info = await this.transporter.sendMail({
-                from: `"${BRAND.name}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-                to,
-                subject: rendered.subject,
-                text: rendered.text,
-                html: rendered.html,
-            });
-
-            // if (log) await log.markSent(info.messageId).catch(() => { });
-            logger.debug(`Email sent to ${to}: ${rendered.subject}`);
-
-        } catch (err) {
-            logger.error(`Email delivery failed to ${to}: ${err.message}`);
-            // if (log) await log.markFailed(err.message).catch(() => { });
-        }
-    }
-
-    async retryFailed(batchSize = 20) {
-        const stuck = await EmailLog.find({
-            status: 'failed',
-            attempts: { $lt: this._maxAttempts() },
-        })
-            .sort({ lastAttemptAt: 1 })
-            .limit(batchSize)
-            .select('+renderContext');
-
-        if (!stuck.length) return { retried: 0 };
-
-        logger.info(`Retrying ${stuck.length} failed email(s)`);
-
-        for (const log of stuck) {
-            let rendered;
-            try {
-                rendered = templates.render(log.template, log.renderContext || {});
-            } catch (err) {
-                await log.markFailed(`Re-render failed: ${err.message}`).catch(() => { });
-                continue;
+            if (log.provider !== 'smtp') throw new DeliveryError('email_provider_invalid');
+            if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+                throw new DeliveryError('smtp_configuration_missing');
             }
-            await this._deliver(log, log.to, rendered);
+            if (!this.transporter) {
+                this.transporter = nodemailer.createTransport({
+                    host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587),
+                    secure: Number(process.env.SMTP_PORT) === 465,
+                    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+                    pool: true, maxConnections: 5, maxMessages: 100, maxRequeues: 0,
+                    connectionTimeout: config.timeoutMs, greetingTimeout: config.timeoutMs,
+                    socketTimeout: config.timeoutMs, logger: false, debug: false,
+                });
+            }
+            const result = await this.transporter.sendMail({ ...request,
+                messageId: '<' + log.dedupeKey + '@vtunova.email>', date: new Date(log.createdAt) });
+            if (!result.accepted?.length) throw new DeliveryError('smtp_recipient_rejected');
+            return { providerMessageId: result.messageId };
+        } catch (error) {
+            // Never switch providers after an ambiguous result.
+            throw classify(error, log.provider);
         }
-
-        return { retried: stuck.length };
     }
-    ///
-    _maxAttempts() {
-        return Number(process.env.EMAIL_MAX_ATTEMPTS) || 3;
-    }
-
 }
 
 module.exports = new EmailService();
+module.exports.EmailService = EmailService;

@@ -26,7 +26,7 @@ async function shutdownApp(reason, exitCode = 0) {
     const timeout = setTimeout(() => {
         logger.error('Shutdown timed out');
         process.exit(1);
-    }, 15000);
+    }, 180000); // Allow in-flight intents and provider calls to drain.
 
     timeout.unref();
 
@@ -44,6 +44,8 @@ async function shutdownApp(reason, exitCode = 0) {
 
     let finalExitCode = exitCode;
 
+    // Finish HTTP producers before workers/queues/database are closed.
+    const httpError = await httpClosed;
     try {
         // Uses the function imported from worker.js.
         await shutdown();
@@ -55,8 +57,6 @@ async function shutdownApp(reason, exitCode = 0) {
             message: err?.message ?? String(err),
         });
     }
-
-    const httpError = await httpClosed;
 
     if (httpError) {
         finalExitCode = 1;

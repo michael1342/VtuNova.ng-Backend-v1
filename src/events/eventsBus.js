@@ -7,7 +7,7 @@ class AppEvent extends EventEmiter {
         this.setMaxListeners(50)
     }
 
-    async emitSafe(eventName, payload) {
+    async emitSafe(eventName, payload, { throwOnError = false } = {}) {
         logger.debug(`Event emitted: ${eventName}`);
         const listeners = this.rawListeners(eventName);
 
@@ -16,7 +16,8 @@ class AppEvent extends EventEmiter {
             try {
                 await listener.call(this, payload);
             } catch (err) {
-                logger.error(`Event listener for "${eventName}" threw: ${err.message}`)
+                logger.error('Event listener failed', { eventName });
+                if (throwOnError) throw new Error('event_listener_failed');
             }
         }));
     }

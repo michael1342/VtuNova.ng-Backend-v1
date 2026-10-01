@@ -6,6 +6,9 @@ const logger = require('./src/utils/logger');
 const registerEmailListeners = require('./src/listeners/email.listener');
 const registerNotificationListeners = require('./src/listeners/notifications.listener');
 const registerScheduler = require('./src/jobs/reconciliation.scheduler');
+const registerEmailScheduler = require('./src/jobs/email.scheduler');
+const EmailLog = require('./src/models/EmailLog.model');
+const emailPayload = require('./src/utils/email-payload');
 const reconciliationWorker = require('./src/worker/reconciliation.worker');
 const reconciliationQueue = require('./src/queue/reconciliation.queue');
 const notificationQueue = require('./src/queue/notifications.queue');
@@ -40,12 +43,19 @@ function shutdown(signal, exitCode = 0) {
 async function startWorker() {
     await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
     if (stopping) return mongoose.disconnect();
+    emailPayload.validateKey();
+    // The unique dedupe index must exist before any listener can enqueue.
+    await EmailLog.createIndexes();
     registerEmailListeners();
     registerNotificationListeners();
     await registerScheduler();
+    await registerEmailScheduler();
     if (stopping) return;
     notificationWorker = require('./src/worker/notification.worker');
     emailWorker = require('./src/worker/email.worker');
+    await emailWorker.waitUntilReady();
+    if (stopping) return;
+    emailWorker.run().catch(() => shutdown('email-worker-failure', 1));
     await reconciliationWorker.waitUntilReady();
     if (stopping) return;
     reconciliationWorker.run().catch(() => shutdown('worker-failure', 1));
