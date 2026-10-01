@@ -92,6 +92,7 @@ app.use(
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
+    message: 'New mailing system is running smoothly.',
     service: process.env.APP_NAME || 'VtuNova',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,

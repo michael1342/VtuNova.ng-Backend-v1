@@ -186,7 +186,9 @@ function registerEmailListeners() {
                     credential, expiresAt,
                 }
             );
+             logger.info('Email verification listener registered')
         })
+       
     );
 
 
