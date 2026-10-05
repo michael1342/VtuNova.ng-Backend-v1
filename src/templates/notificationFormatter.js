@@ -91,7 +91,7 @@ class NotificationFormatter {
                     if (notification.status === 'reversed') return `${purchase} has been reversed.`;
                 }
                 return 'Your transaction has been updated.';
-            case 'wallet':
+            case 'deposit':
                 return `Your wallet activity has been updated${notification.amount ? ` by ₦${notification.amount}` : ''}.`;
             case 'system':
                 return 'A system update has been posted for your account.';
